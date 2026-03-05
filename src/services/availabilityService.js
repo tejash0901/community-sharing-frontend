@@ -10,6 +10,11 @@ export const getAvailability = async (toolId) => {
   return data
 }
 
+export const getAvailabilityWindows = async (toolId) => {
+  const { data } = await api.get(`/tools/${toolId}/availability/windows`)
+  return data
+}
+
 export const deleteAvailability = async (id) => {
   await api.delete(`/availability/${id}`)
 }

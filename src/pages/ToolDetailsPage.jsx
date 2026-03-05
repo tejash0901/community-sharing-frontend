@@ -3,14 +3,14 @@ import { useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { getTool } from '../services/toolService'
 import { createBooking } from '../services/bookingService'
-import { getAvailability } from '../services/availabilityService'
+import { getAvailabilityWindows } from '../services/availabilityService'
 
 function ToolDetailsPage() {
   const { id } = useParams()
   const [tool, setTool] = useState(null)
   const [slots, setSlots] = useState([])
   const [requestedRanges, setRequestedRanges] = useState({})
-  const [pendingRequestSlotIds, setPendingRequestSlotIds] = useState([])
+  const [pendingRequestKeys, setPendingRequestKeys] = useState([])
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
@@ -23,12 +23,13 @@ function ToolDetailsPage() {
   const load = async () => {
     setError('')
     try {
-      const [t, s] = await Promise.all([getTool(id), getAvailability(id)])
+      const [t, s] = await Promise.all([getTool(id), getAvailabilityWindows(id)])
       setTool(t)
       setSlots(s)
       const nextRanges = {}
       s.forEach((slot) => {
-        nextRanges[slot.id] = {
+        const key = `${slot.id}-${slot.startTime}-${slot.endTime}`
+        nextRanges[key] = {
           startTime: toLocalInputValue(slot.startTime),
           endTime: toLocalInputValue(slot.endTime),
         }
@@ -40,27 +41,28 @@ function ToolDetailsPage() {
   }
 
   useEffect(() => {
-    setPendingRequestSlotIds([])
+    setPendingRequestKeys([])
     setSuccess('')
     load()
   }, [id])
 
-  const requestBooking = async (slotId) => {
+  const requestBooking = async (slot) => {
     try {
       setError('')
       setSuccess('')
-      const range = requestedRanges[slotId]
+      const key = `${slot.id}-${slot.startTime}-${slot.endTime}`
+      const range = requestedRanges[key]
       if (!range?.startTime || !range?.endTime) {
         setError('Please choose start and end time')
         return
       }
       await createBooking({
         toolId: Number(id),
-        slotId,
+        slotId: slot.id,
         requestedStartTime: new Date(range.startTime).toISOString(),
         requestedEndTime: new Date(range.endTime).toISOString(),
       })
-      setPendingRequestSlotIds((prev) => [...new Set([...prev, slotId])])
+      setPendingRequestKeys((prev) => [...new Set([...prev, key])])
       setSuccess('Booking requested successfully. Status is now PENDING approval.')
       load()
     } catch (err) {
@@ -88,38 +90,38 @@ function ToolDetailsPage() {
           <h2 className="font-semibold mb-3">Available Slots</h2>
           <div className="space-y-2">
             {slots.map((slot) => (
-              <div key={slot.id} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
+              <div key={`${slot.id}-${slot.startTime}-${slot.endTime}`} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
                 <div className="space-y-2">
                   <div className="text-sm text-slate-600">
-                    Owner availability: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
+                    Available window: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <input
                       className="input"
                       type="datetime-local"
-                      value={requestedRanges[slot.id]?.startTime || ''}
+                      value={requestedRanges[`${slot.id}-${slot.startTime}-${slot.endTime}`]?.startTime || ''}
                       min={toLocalInputValue(slot.startTime)}
                       max={toLocalInputValue(slot.endTime)}
                       onChange={(e) => setRequestedRanges((prev) => ({
                         ...prev,
-                        [slot.id]: { ...prev[slot.id], startTime: e.target.value },
+                        [`${slot.id}-${slot.startTime}-${slot.endTime}`]: { ...prev[`${slot.id}-${slot.startTime}-${slot.endTime}`], startTime: e.target.value },
                       }))}
                     />
                     <input
                       className="input"
                       type="datetime-local"
-                      value={requestedRanges[slot.id]?.endTime || ''}
+                      value={requestedRanges[`${slot.id}-${slot.startTime}-${slot.endTime}`]?.endTime || ''}
                       min={toLocalInputValue(slot.startTime)}
                       max={toLocalInputValue(slot.endTime)}
                       onChange={(e) => setRequestedRanges((prev) => ({
                         ...prev,
-                        [slot.id]: { ...prev[slot.id], endTime: e.target.value },
+                        [`${slot.id}-${slot.startTime}-${slot.endTime}`]: { ...prev[`${slot.id}-${slot.startTime}-${slot.endTime}`], endTime: e.target.value },
                       }))}
                     />
                   </div>
                 </div>
-                {slot.status === 'AVAILABLE' && !pendingRequestSlotIds.includes(slot.id) ? (
-                  <button className="btn-primary" onClick={() => requestBooking(slot.id)}>Request Booking</button>
+                {slot.status === 'AVAILABLE' && !pendingRequestKeys.includes(`${slot.id}-${slot.startTime}-${slot.endTime}`) ? (
+                  <button className="btn-primary" onClick={() => requestBooking(slot)}>Request Booking</button>
                 ) : slot.status === 'AVAILABLE' ? (
                   <span className="text-sm text-amber-700 font-medium">PENDING APPROVAL</span>
                 ) : (
@@ -127,6 +129,7 @@ function ToolDetailsPage() {
                 )}
               </div>
             ))}
+            {slots.length === 0 && <div className="text-sm text-slate-500">No free windows currently available for this tool.</div>}
           </div>
         </div>
       </div>
