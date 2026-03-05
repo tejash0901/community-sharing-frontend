@@ -37,7 +37,7 @@ function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <BookingStatusBadge status={booking.status} />
-                  {booking.status === 'APPROVED' && (
+                  {(booking.status === 'APPROVED' || booking.status === 'RETURN_REJECTED') && (
                     <button className="btn-secondary" onClick={async () => { await returnBooking(booking.id); load() }}>Return</button>
                   )}
                 </div>

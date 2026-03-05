@@ -10,6 +10,8 @@ function ToolDetailsPage() {
   const [tool, setTool] = useState(null)
   const [slots, setSlots] = useState([])
   const [requestedRanges, setRequestedRanges] = useState({})
+  const [pendingRequestSlotIds, setPendingRequestSlotIds] = useState([])
+  const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
   const toLocalInputValue = (isoString) => {
@@ -37,10 +39,16 @@ function ToolDetailsPage() {
     }
   }
 
-  useEffect(() => { load() }, [id])
+  useEffect(() => {
+    setPendingRequestSlotIds([])
+    setSuccess('')
+    load()
+  }, [id])
 
   const requestBooking = async (slotId) => {
     try {
+      setError('')
+      setSuccess('')
       const range = requestedRanges[slotId]
       if (!range?.startTime || !range?.endTime) {
         setError('Please choose start and end time')
@@ -52,6 +60,8 @@ function ToolDetailsPage() {
         requestedStartTime: new Date(range.startTime).toISOString(),
         requestedEndTime: new Date(range.endTime).toISOString(),
       })
+      setPendingRequestSlotIds((prev) => [...new Set([...prev, slotId])])
+      setSuccess('Booking requested successfully. Status is now PENDING approval.')
       load()
     } catch (err) {
       setError(err?.response?.data?.message || 'Booking failed')
@@ -62,6 +72,7 @@ function ToolDetailsPage() {
     <>
       <Navbar />
       <div className="container-page space-y-4">
+        {success && <div className="card p-3 text-green-700">{success}</div>}
         {error && <div className="card p-3 text-rose-700">{error}</div>}
         {tool && (
           <div className="card p-4">
@@ -107,8 +118,10 @@ function ToolDetailsPage() {
                     />
                   </div>
                 </div>
-                {slot.status === 'AVAILABLE' ? (
+                {slot.status === 'AVAILABLE' && !pendingRequestSlotIds.includes(slot.id) ? (
                   <button className="btn-primary" onClick={() => requestBooking(slot.id)}>Request Booking</button>
+                ) : slot.status === 'AVAILABLE' ? (
+                  <span className="text-sm text-amber-700 font-medium">PENDING APPROVAL</span>
                 ) : (
                   <span className="text-sm">{slot.status}</span>
                 )}
