@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import { createAvailability, deleteAvailability, getAvailability } from '../services/availabilityService'
-import { approveBooking, getOwnerBookings, rejectBooking } from '../services/bookingService'
+import { approveBooking, approveReturnBooking, getOwnerBookings, rejectBooking, rejectReturnBooking } from '../services/bookingService'
 import { createTool, deleteTool, getTools } from '../services/toolService'
 import { useAuth } from '../hooks/useAuth'
 import BookingStatusBadge from '../components/BookingStatusBadge'
@@ -99,13 +99,24 @@ function OwnerPanelPage() {
           <div className="space-y-2">
             {ownerBookings.map((b) => (
               <div key={b.id} className="border rounded p-3 flex flex-wrap justify-between items-center gap-2">
-                <div>{b.toolName} - requested by {b.borrowerName}</div>
+                <div>
+                  <div>{b.toolName} - requested by {b.borrowerName}</div>
+                  <div className="text-xs text-slate-500">
+                    Requested: {new Date(b.requestedStartTime || b.slotStartTime).toLocaleString()} - {new Date(b.requestedEndTime || b.slotEndTime).toLocaleString()}
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <BookingStatusBadge status={b.status} />
                   {b.status === 'PENDING' && (
                     <>
                       <button className="btn-primary" onClick={async () => { await approveBooking(b.id); load() }}>Approve</button>
                       <button className="btn-secondary" onClick={async () => { await rejectBooking(b.id); load() }}>Reject</button>
+                    </>
+                  )}
+                  {b.status === 'RETURN_PENDING' && (
+                    <>
+                      <button className="btn-primary" onClick={async () => { await approveReturnBooking(b.id); load() }}>Confirm Return</button>
+                      <button className="btn-secondary" onClick={async () => { await rejectReturnBooking(b.id); load() }}>Reject Return</button>
                     </>
                   )}
                 </div>

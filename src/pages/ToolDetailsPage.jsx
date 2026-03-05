@@ -9,7 +9,14 @@ function ToolDetailsPage() {
   const { id } = useParams()
   const [tool, setTool] = useState(null)
   const [slots, setSlots] = useState([])
+  const [requestedRanges, setRequestedRanges] = useState({})
   const [error, setError] = useState('')
+
+  const toLocalInputValue = (isoString) => {
+    const date = new Date(isoString)
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    return date.toISOString().slice(0, 16)
+  }
 
   const load = async () => {
     setError('')
@@ -17,6 +24,14 @@ function ToolDetailsPage() {
       const [t, s] = await Promise.all([getTool(id), getAvailability(id)])
       setTool(t)
       setSlots(s)
+      const nextRanges = {}
+      s.forEach((slot) => {
+        nextRanges[slot.id] = {
+          startTime: toLocalInputValue(slot.startTime),
+          endTime: toLocalInputValue(slot.endTime),
+        }
+      })
+      setRequestedRanges(nextRanges)
     } catch (err) {
       setError(err?.response?.data?.message || 'Unable to load tool')
     }
@@ -26,7 +41,17 @@ function ToolDetailsPage() {
 
   const requestBooking = async (slotId) => {
     try {
-      await createBooking({ toolId: Number(id), slotId })
+      const range = requestedRanges[slotId]
+      if (!range?.startTime || !range?.endTime) {
+        setError('Please choose start and end time')
+        return
+      }
+      await createBooking({
+        toolId: Number(id),
+        slotId,
+        requestedStartTime: new Date(range.startTime).toISOString(),
+        requestedEndTime: new Date(range.endTime).toISOString(),
+      })
       load()
     } catch (err) {
       setError(err?.response?.data?.message || 'Booking failed')
@@ -53,7 +78,35 @@ function ToolDetailsPage() {
           <div className="space-y-2">
             {slots.map((slot) => (
               <div key={slot.id} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
-                <span>{new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}</span>
+                <div className="space-y-2">
+                  <div className="text-sm text-slate-600">
+                    Owner availability: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <input
+                      className="input"
+                      type="datetime-local"
+                      value={requestedRanges[slot.id]?.startTime || ''}
+                      min={toLocalInputValue(slot.startTime)}
+                      max={toLocalInputValue(slot.endTime)}
+                      onChange={(e) => setRequestedRanges((prev) => ({
+                        ...prev,
+                        [slot.id]: { ...prev[slot.id], startTime: e.target.value },
+                      }))}
+                    />
+                    <input
+                      className="input"
+                      type="datetime-local"
+                      value={requestedRanges[slot.id]?.endTime || ''}
+                      min={toLocalInputValue(slot.startTime)}
+                      max={toLocalInputValue(slot.endTime)}
+                      onChange={(e) => setRequestedRanges((prev) => ({
+                        ...prev,
+                        [slot.id]: { ...prev[slot.id], endTime: e.target.value },
+                      }))}
+                    />
+                  </div>
+                </div>
                 {slot.status === 'AVAILABLE' ? (
                   <button className="btn-primary" onClick={() => requestBooking(slot.id)}>Request Booking</button>
                 ) : (

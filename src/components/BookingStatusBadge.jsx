@@ -3,6 +3,7 @@ import React from 'react'
 const statusClass = {
   PENDING: 'bg-amber-100 text-amber-800',
   APPROVED: 'bg-green-100 text-green-800',
+  RETURN_PENDING: 'bg-sky-100 text-sky-800',
   REJECTED: 'bg-rose-100 text-rose-800',
   RETURNED: 'bg-slate-100 text-slate-700',
 }

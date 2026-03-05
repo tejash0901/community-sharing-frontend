@@ -31,6 +31,9 @@ function DashboardPage() {
                 <div>
                   <div className="font-medium">{booking.toolName}</div>
                   <div className="text-sm text-slate-500">Owner: {booking.ownerName}</div>
+                  <div className="text-xs text-slate-500">
+                    Time: {new Date(booking.requestedStartTime || booking.slotStartTime).toLocaleString()} - {new Date(booking.requestedEndTime || booking.slotEndTime).toLocaleString()}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <BookingStatusBadge status={booking.status} />

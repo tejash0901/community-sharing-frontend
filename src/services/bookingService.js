@@ -20,6 +20,16 @@ export const returnBooking = async (id) => {
   return data
 }
 
+export const approveReturnBooking = async (id) => {
+  const { data } = await api.patch(`/bookings/${id}/return/approve`)
+  return data
+}
+
+export const rejectReturnBooking = async (id) => {
+  const { data } = await api.patch(`/bookings/${id}/return/reject`)
+  return data
+}
+
 export const getMineBookings = async () => {
   const { data } = await api.get('/bookings/mine')
   return data
