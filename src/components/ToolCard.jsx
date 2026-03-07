@@ -1,9 +1,13 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { getImageUrl } from '../services/toolService'
 
 function ToolCard({ tool }) {
   return (
     <div className="card p-4">
+      {tool.imageUrl && (
+        <img src={getImageUrl(tool.imageUrl)} alt={tool.name} className="w-full h-48 object-contain rounded mb-3 bg-slate-50" />
+      )}
       <div className="flex justify-between items-start gap-2">
         <div>
           <h3 className="font-semibold text-lg">{tool.name}</h3>

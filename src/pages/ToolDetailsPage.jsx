@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { getTool } from '../services/toolService'
+import { getTool, getImageUrl } from '../services/toolService'
 import { createBooking } from '../services/bookingService'
 import { getAvailabilityWindows } from '../services/availabilityService'
 
@@ -10,7 +10,6 @@ function ToolDetailsPage() {
   const [tool, setTool] = useState(null)
   const [slots, setSlots] = useState([])
   const [requestedRanges, setRequestedRanges] = useState({})
-  const [pendingRequestKeys, setPendingRequestKeys] = useState([])
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
@@ -41,7 +40,6 @@ function ToolDetailsPage() {
   }
 
   useEffect(() => {
-    setPendingRequestKeys([])
     setSuccess('')
     load()
   }, [id])
@@ -62,7 +60,6 @@ function ToolDetailsPage() {
         requestedStartTime: new Date(range.startTime).toISOString(),
         requestedEndTime: new Date(range.endTime).toISOString(),
       })
-      setPendingRequestKeys((prev) => [...new Set([...prev, key])])
       setSuccess('Booking requested successfully. Status is now PENDING approval.')
       load()
     } catch (err) {
@@ -78,6 +75,9 @@ function ToolDetailsPage() {
         {error && <div className="card p-3 text-rose-700">{error}</div>}
         {tool && (
           <div className="card p-4">
+            {tool.imageUrl && (
+              <img src={getImageUrl(tool.imageUrl)} alt={tool.name} className="w-full h-72 object-contain rounded mb-4 bg-slate-50" />
+            )}
             <h1 className="text-2xl font-bold">{tool.name}</h1>
             <p className="text-slate-600 mt-2">{tool.description}</p>
             <p className="mt-2">Category: {tool.category || 'General'}</p>
@@ -89,46 +89,43 @@ function ToolDetailsPage() {
         <div className="card p-4">
           <h2 className="font-semibold mb-3">Available Slots</h2>
           <div className="space-y-2">
-            {slots.map((slot) => (
-              <div key={`${slot.id}-${slot.startTime}-${slot.endTime}`} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
-                <div className="space-y-2">
-                  <div className="text-sm text-slate-600">
-                    Available window: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
+            {slots.map((slot) => {
+              const key = `${slot.id}-${slot.startTime}-${slot.endTime}`
+              return (
+                <div key={key} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
+                  <div className="space-y-2">
+                    <div className="text-sm text-slate-600">
+                      Available window: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        className="input"
+                        type="datetime-local"
+                        value={requestedRanges[key]?.startTime || ''}
+                        min={toLocalInputValue(slot.startTime)}
+                        max={toLocalInputValue(slot.endTime)}
+                        onChange={(e) => setRequestedRanges((prev) => ({
+                          ...prev,
+                          [key]: { ...prev[key], startTime: e.target.value },
+                        }))}
+                      />
+                      <input
+                        className="input"
+                        type="datetime-local"
+                        value={requestedRanges[key]?.endTime || ''}
+                        min={toLocalInputValue(slot.startTime)}
+                        max={toLocalInputValue(slot.endTime)}
+                        onChange={(e) => setRequestedRanges((prev) => ({
+                          ...prev,
+                          [key]: { ...prev[key], endTime: e.target.value },
+                        }))}
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      className="input"
-                      type="datetime-local"
-                      value={requestedRanges[`${slot.id}-${slot.startTime}-${slot.endTime}`]?.startTime || ''}
-                      min={toLocalInputValue(slot.startTime)}
-                      max={toLocalInputValue(slot.endTime)}
-                      onChange={(e) => setRequestedRanges((prev) => ({
-                        ...prev,
-                        [`${slot.id}-${slot.startTime}-${slot.endTime}`]: { ...prev[`${slot.id}-${slot.startTime}-${slot.endTime}`], startTime: e.target.value },
-                      }))}
-                    />
-                    <input
-                      className="input"
-                      type="datetime-local"
-                      value={requestedRanges[`${slot.id}-${slot.startTime}-${slot.endTime}`]?.endTime || ''}
-                      min={toLocalInputValue(slot.startTime)}
-                      max={toLocalInputValue(slot.endTime)}
-                      onChange={(e) => setRequestedRanges((prev) => ({
-                        ...prev,
-                        [`${slot.id}-${slot.startTime}-${slot.endTime}`]: { ...prev[`${slot.id}-${slot.startTime}-${slot.endTime}`], endTime: e.target.value },
-                      }))}
-                    />
-                  </div>
-                </div>
-                {slot.status === 'AVAILABLE' && !pendingRequestKeys.includes(`${slot.id}-${slot.startTime}-${slot.endTime}`) ? (
                   <button className="btn-primary" onClick={() => requestBooking(slot)}>Request Booking</button>
-                ) : slot.status === 'AVAILABLE' ? (
-                  <span className="text-sm text-amber-700 font-medium">PENDING APPROVAL</span>
-                ) : (
-                  <span className="text-sm">{slot.status}</span>
-                )}
-              </div>
-            ))}
+                </div>
+              )
+            })}
             {slots.length === 0 && <div className="text-sm text-slate-500">No free windows currently available for this tool.</div>}
           </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import { createAvailability, deleteAvailability, getAvailability } from '../services/availabilityService'
-import { approveBooking, approveReturnBooking, getOwnerBookings, rejectBooking, rejectReturnBooking } from '../services/bookingService'
+import { approveBooking, approveReturnBooking, getOwnerBookings, rejectBooking, rejectReturnBooking, collectBooking, cancelBooking } from '../services/bookingService'
 import { createTool, deleteTool, getTools } from '../services/toolService'
 import { useAuth } from '../hooks/useAuth'
 import BookingStatusBadge from '../components/BookingStatusBadge'
@@ -13,51 +13,106 @@ function OwnerPanelPage() {
   const [selectedTool, setSelectedTool] = useState(null)
   const [slots, setSlots] = useState([])
   const [toolForm, setToolForm] = useState({ name: '', description: '', category: '', condition: 'GOOD', estimatedPrice: '' })
+  const [imageFile, setImageFile] = useState(null)
   const [slotForm, setSlotForm] = useState({ startTime: '', endTime: '' })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const load = async () => {
-    const allTools = await getTools()
-    setTools(allTools.filter((t) => t.ownerId === user?.userId))
-    setOwnerBookings(await getOwnerBookings())
+  const handleError = (err) => {
+    setError(err?.response?.data?.message || err?.message || 'An error occurred')
+    setSuccess('')
   }
 
-  useEffect(() => { load() }, [])
+  const load = async () => {
+    try {
+      const allTools = await getTools()
+      setTools(allTools.filter((t) => t.ownerId === user?.userId))
+      setOwnerBookings(await getOwnerBookings())
+    } catch (err) {
+      handleError(err)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const onCreateTool = async (e) => {
     e.preventDefault()
-    await createTool({ ...toolForm, estimatedPrice: toolForm.estimatedPrice ? Number(toolForm.estimatedPrice) : null })
-    setToolForm({ name: '', description: '', category: '', condition: 'GOOD', estimatedPrice: '' })
-    load()
+    try {
+      setError('')
+      await createTool({ ...toolForm, estimatedPrice: toolForm.estimatedPrice ? Number(toolForm.estimatedPrice) : null }, imageFile)
+      setToolForm({ name: '', description: '', category: '', condition: 'GOOD', estimatedPrice: '' })
+      setImageFile(null)
+      setSuccess('Tool created successfully')
+      load()
+    } catch (err) {
+      handleError(err)
+    }
   }
 
   const loadSlots = async (toolId) => {
-    setSelectedTool(toolId)
-    setSlots(await getAvailability(toolId))
+    try {
+      setSelectedTool(toolId)
+      setSlots(await getAvailability(toolId))
+    } catch (err) {
+      handleError(err)
+    }
   }
 
   const onCreateSlot = async (e) => {
     e.preventDefault()
     if (!selectedTool) return
-    await createAvailability(selectedTool, {
-      startTime: new Date(slotForm.startTime).toISOString(),
-      endTime: new Date(slotForm.endTime).toISOString(),
-    })
-    setSlotForm({ startTime: '', endTime: '' })
-    loadSlots(selectedTool)
+    try {
+      setError('')
+      await createAvailability(selectedTool, {
+        startTime: new Date(slotForm.startTime).toISOString(),
+        endTime: new Date(slotForm.endTime).toISOString(),
+      })
+      setSlotForm({ startTime: '', endTime: '' })
+      setSuccess('Slot added successfully')
+      loadSlots(selectedTool)
+    } catch (err) {
+      handleError(err)
+    }
+  }
+
+  const handleAction = async (action) => {
+    try {
+      setError('')
+      await action()
+      setSuccess('Action completed successfully')
+      load()
+      if (selectedTool) loadSlots(selectedTool)
+    } catch (err) {
+      handleError(err)
+    }
   }
 
   return (
     <>
       <Navbar />
       <div className="container-page grid lg:grid-cols-2 gap-6">
+        {error && <div className="card p-3 text-rose-700 lg:col-span-2">{error}</div>}
+        {success && <div className="card p-3 text-green-700 lg:col-span-2">{success}</div>}
+
         <section className="card p-4">
           <h2 className="font-semibold mb-3">Add Tool</h2>
           <form className="space-y-2" onSubmit={onCreateTool}>
             <input className="input" required placeholder="Tool name" value={toolForm.name} onChange={(e) => setToolForm({ ...toolForm, name: e.target.value })} />
             <input className="input" placeholder="Category" value={toolForm.category} onChange={(e) => setToolForm({ ...toolForm, category: e.target.value })} />
             <textarea className="input" placeholder="Description" value={toolForm.description} onChange={(e) => setToolForm({ ...toolForm, description: e.target.value })} />
-            <input className="input" placeholder="Condition (NEW/GOOD/FAIR/NEEDS_REPAIR)" value={toolForm.condition} onChange={(e) => setToolForm({ ...toolForm, condition: e.target.value })} />
+            <select className="input" value={toolForm.condition} onChange={(e) => setToolForm({ ...toolForm, condition: e.target.value })}>
+              <option value="NEW">New</option>
+              <option value="GOOD">Good</option>
+              <option value="FAIR">Fair</option>
+              <option value="NEEDS_REPAIR">Needs Repair</option>
+            </select>
             <input className="input" type="number" placeholder="Estimated Price" value={toolForm.estimatedPrice} onChange={(e) => setToolForm({ ...toolForm, estimatedPrice: e.target.value })} />
+            <label className="block text-sm text-slate-600">Tool Image (optional)</label>
+            <input className="input" type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => setImageFile(e.target.files[0] || null)} />
             <button className="btn-primary">Create Tool</button>
           </form>
         </section>
@@ -70,7 +125,7 @@ function OwnerPanelPage() {
                 <span>{tool.name}</span>
                 <div className="flex gap-2">
                   <button className="btn-secondary" onClick={() => loadSlots(tool.id)}>Slots</button>
-                  <button className="btn-secondary" onClick={async () => { await deleteTool(tool.id); load() }}>Delete</button>
+                  <button className="btn-secondary" onClick={() => handleAction(() => deleteTool(tool.id))}>Delete</button>
                 </div>
               </div>
             ))}
@@ -87,7 +142,7 @@ function OwnerPanelPage() {
               {slots.map((slot) => (
                 <div key={slot.id} className="border rounded p-2 flex justify-between">
                   <span>{new Date(slot.startTime).toLocaleString()}</span>
-                  <button className="btn-secondary" onClick={async () => { await deleteAvailability(slot.id); loadSlots(selectedTool) }}>Delete</button>
+                  <button className="btn-secondary" onClick={() => handleAction(() => deleteAvailability(slot.id))}>Delete</button>
                 </div>
               ))}
             </div>
@@ -109,14 +164,23 @@ function OwnerPanelPage() {
                   <BookingStatusBadge status={b.status} />
                   {b.status === 'PENDING' && (
                     <>
-                      <button className="btn-primary" onClick={async () => { await approveBooking(b.id); load() }}>Approve</button>
-                      <button className="btn-secondary" onClick={async () => { await rejectBooking(b.id); load() }}>Reject</button>
+                      <button className="btn-primary" onClick={() => handleAction(() => approveBooking(b.id))}>Approve</button>
+                      <button className="btn-secondary" onClick={() => handleAction(() => rejectBooking(b.id))}>Reject</button>
                     </>
+                  )}
+                  {b.status === 'APPROVED' && (
+                    <>
+                      <button className="btn-primary" onClick={() => handleAction(() => collectBooking(b.id))}>Mark Collected</button>
+                      <button className="btn-secondary" onClick={() => handleAction(() => cancelBooking(b.id))}>Cancel</button>
+                    </>
+                  )}
+                  {b.status === 'COLLECT_PENDING' && (
+                    <span className="text-xs text-indigo-700 font-medium">Waiting borrower confirmation</span>
                   )}
                   {b.status === 'RETURN_PENDING' && (
                     <>
-                      <button className="btn-primary" onClick={async () => { await approveReturnBooking(b.id); load() }}>Confirm Return</button>
-                      <button className="btn-secondary" onClick={async () => { await rejectReturnBooking(b.id); load() }}>Reject Return</button>
+                      <button className="btn-primary" onClick={() => handleAction(() => approveReturnBooking(b.id))}>Confirm Return</button>
+                      <button className="btn-secondary" onClick={() => handleAction(() => rejectReturnBooking(b.id))}>Reject Return</button>
                     </>
                   )}
                 </div>

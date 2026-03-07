@@ -22,8 +22,8 @@ function AppRoutes() {
         <Route path="/owner" element={<OwnerPanelPage />} />
       </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
       <Route path="/home" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
