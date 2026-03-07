@@ -5,6 +5,13 @@ import { getTool, getImageUrl } from '../services/toolService'
 import { createBooking } from '../services/bookingService'
 import { getAvailabilityWindows } from '../services/availabilityService'
 
+const conditionColors = {
+  NEW: 'bg-emerald-50 text-emerald-700',
+  GOOD: 'bg-blue-50 text-blue-700',
+  FAIR: 'bg-amber-50 text-amber-700',
+  NEEDS_REPAIR: 'bg-red-50 text-red-700',
+}
+
 function ToolDetailsPage() {
   const { id } = useParams()
   const [tool, setTool] = useState(null)
@@ -70,67 +77,106 @@ function ToolDetailsPage() {
   return (
     <>
       <Navbar />
-      <div className="container-page space-y-4">
-        {success && <div className="card p-3 text-green-700">{success}</div>}
-        {error && <div className="card p-3 text-rose-700">{error}</div>}
+      <div className="container-page space-y-6">
+        {success && <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm rounded-xl px-4 py-3">{success}</div>}
+        {error && <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
+
         {tool && (
-          <div className="card p-4">
-            {tool.imageUrl && (
-              <img src={getImageUrl(tool.imageUrl)} alt={tool.name} className="w-full h-72 object-contain rounded mb-4 bg-slate-50" />
-            )}
-            <h1 className="text-2xl font-bold">{tool.name}</h1>
-            <p className="text-slate-600 mt-2">{tool.description}</p>
-            <p className="mt-2">Category: {tool.category || 'General'}</p>
-            <p>Condition: {tool.condition || 'N/A'}</p>
-            <p>Owner pickup address: Block {tool.ownerBlock || '-'}, Floor {tool.ownerFloor || '-'}, Flat {tool.ownerFlatNumber || '-'}</p>
+          <div className="card overflow-hidden">
+            <div className="md:flex">
+              {tool.imageUrl ? (
+                <div className="md:w-1/2 bg-gray-50 flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-gray-100">
+                  <img src={getImageUrl(tool.imageUrl)} alt={tool.name} className="max-h-80 object-contain rounded-lg" />
+                </div>
+              ) : (
+                <div className="md:w-1/2 bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-12 border-b md:border-b-0 md:border-r border-gray-100">
+                  <span className="text-7xl opacity-40">🔧</span>
+                </div>
+              )}
+              <div className="md:w-1/2 p-6 md:p-8 space-y-4">
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <h1 className="text-2xl font-bold text-gray-900">{tool.name}</h1>
+                    <span className={`text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${conditionColors[tool.condition] || 'bg-gray-50 text-gray-600'}`}>
+                      {tool.condition || 'N/A'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">{tool.category || 'General'}</p>
+                </div>
+                <p className="text-gray-600 leading-relaxed">{tool.description || 'No description provided.'}</p>
+                <div className="pt-4 border-t border-gray-100 space-y-2">
+                  <DetailRow label="Owner" value={tool.ownerName} />
+                  <DetailRow label="Pickup Address" value={`Block ${tool.ownerBlock || '-'}, Floor ${tool.ownerFloor || '-'}, Flat ${tool.ownerFlatNumber || '-'}`} />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="card p-4">
-          <h2 className="font-semibold mb-3">Available Slots</h2>
-          <div className="space-y-2">
-            {slots.map((slot) => {
-              const key = `${slot.id}-${slot.startTime}-${slot.endTime}`
-              return (
-                <div key={key} className="border rounded p-3 flex flex-wrap justify-between items-center gap-3">
-                  <div className="space-y-2">
-                    <div className="text-sm text-slate-600">
-                      Available window: {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
+        <div className="card p-6">
+          <h2 className="section-title mb-4">Available Slots</h2>
+          {slots.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No free windows currently available for this tool.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {slots.map((slot) => {
+                const key = `${slot.id}-${slot.startTime}-${slot.endTime}`
+                return (
+                  <div key={key} className="border border-gray-100 rounded-xl p-5 space-y-3 hover:bg-gray-50/50 transition-colors">
+                    <div className="text-sm text-gray-500">
+                      <span className="font-medium text-gray-700">Available:</span>{' '}
+                      {new Date(slot.startTime).toLocaleString()} &mdash; {new Date(slot.endTime).toLocaleString()}
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <input
-                        className="input"
-                        type="datetime-local"
-                        value={requestedRanges[key]?.startTime || ''}
-                        min={toLocalInputValue(slot.startTime)}
-                        max={toLocalInputValue(slot.endTime)}
-                        onChange={(e) => setRequestedRanges((prev) => ({
-                          ...prev,
-                          [key]: { ...prev[key], startTime: e.target.value },
-                        }))}
-                      />
-                      <input
-                        className="input"
-                        type="datetime-local"
-                        value={requestedRanges[key]?.endTime || ''}
-                        min={toLocalInputValue(slot.startTime)}
-                        max={toLocalInputValue(slot.endTime)}
-                        onChange={(e) => setRequestedRanges((prev) => ({
-                          ...prev,
-                          [key]: { ...prev[key], endTime: e.target.value },
-                        }))}
-                      />
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="input-label">From</label>
+                        <input
+                          className="input"
+                          type="datetime-local"
+                          value={requestedRanges[key]?.startTime || ''}
+                          min={toLocalInputValue(slot.startTime)}
+                          max={toLocalInputValue(slot.endTime)}
+                          onChange={(e) => setRequestedRanges((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], startTime: e.target.value },
+                          }))}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="input-label">To</label>
+                        <input
+                          className="input"
+                          type="datetime-local"
+                          value={requestedRanges[key]?.endTime || ''}
+                          min={toLocalInputValue(slot.startTime)}
+                          max={toLocalInputValue(slot.endTime)}
+                          onChange={(e) => setRequestedRanges((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], endTime: e.target.value },
+                          }))}
+                        />
+                      </div>
+                      <button className="btn-primary whitespace-nowrap" onClick={() => requestBooking(slot)}>Request Booking</button>
                     </div>
                   </div>
-                  <button className="btn-primary" onClick={() => requestBooking(slot)}>Request Booking</button>
-                </div>
-              )
-            })}
-            {slots.length === 0 && <div className="text-sm text-slate-500">No free windows currently available for this tool.</div>}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
     </>
+  )
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex gap-2 text-sm">
+      <span className="text-gray-400 min-w-[110px]">{label}</span>
+      <span className="text-gray-700 font-medium">{value}</span>
+    </div>
   )
 }
 
