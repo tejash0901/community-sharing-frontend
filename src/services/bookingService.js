@@ -30,6 +30,21 @@ export const rejectReturnBooking = async (id) => {
   return data
 }
 
+export const collectBooking = async (id) => {
+  const { data } = await api.patch(`/bookings/${id}/collect`)
+  return data
+}
+
+export const confirmCollectBooking = async (id) => {
+  const { data } = await api.patch(`/bookings/${id}/collect/confirm`)
+  return data
+}
+
+export const cancelBooking = async (id) => {
+  const { data } = await api.patch(`/bookings/${id}/cancel`)
+  return data
+}
+
 export const getMineBookings = async () => {
   const { data } = await api.get('/bookings/mine')
   return data
