@@ -7,9 +7,18 @@ export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => {
     const token = localStorage.getItem('auth_token')
     const userRaw = localStorage.getItem('auth_user')
+    let user = null;
+    try {
+      if (userRaw && userRaw !== 'undefined') {
+        user = JSON.parse(userRaw);
+      }
+    } catch (e) {
+      console.warn('Failed to parse auth_user from local storage', e);
+    }
+
     return {
       token,
-      user: userRaw ? JSON.parse(userRaw) : null,
+      user,
     }
   })
 
