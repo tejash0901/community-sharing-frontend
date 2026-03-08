@@ -7,6 +7,7 @@ import RegisterPage from '../pages/RegisterPage'
 import DashboardPage from '../pages/DashboardPage'
 import ToolDetailsPage from '../pages/ToolDetailsPage'
 import OwnerPanelPage from '../pages/OwnerPanelPage'
+import ProfilePage from '../pages/ProfilePage'
 import NotFoundPage from '../pages/NotFoundPage'
 
 function AppRoutes() {
@@ -20,6 +21,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/tools/:id" element={<ToolDetailsPage />} />
         <Route path="/owner" element={<OwnerPanelPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       <Route path="/home" element={<Navigate to="/" replace />} />
