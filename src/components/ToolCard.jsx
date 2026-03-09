@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom'
 import { getImageUrl } from '../services/toolService'
 import { ArrowUpRight } from 'lucide-react'
 
+const conditionColors = {
+  NEW: 'bg-emerald-50 text-emerald-700',
+  GOOD: 'bg-blue-50 text-blue-700',
+  FAIR: 'bg-amber-50 text-amber-700',
+  NEEDS_REPAIR: 'bg-red-50 text-red-700',
+}
+
 function ToolCard({ tool }) {
   return (
     <div className="card p-5 group">

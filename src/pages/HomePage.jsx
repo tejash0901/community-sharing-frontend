@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { getTools } from '../services/toolService'
+import { useAuth } from '../hooks/useAuth'
 import Navbar from '../components/Navbar'
 import ToolCard from '../components/ToolCard'
 import { motion, useScroll, useTransform } from 'framer-motion'
@@ -126,6 +127,7 @@ function useMouseGlow() {
 /*               HOME PAGE                  */
 /* ──────────────────────────────────────── */
 function HomePage() {
+  const { isAuthenticated } = useAuth()
   const [tools, setTools] = useState([])
   const [error, setError] = useState('')
   const { scrollYProgress } = useScroll()
