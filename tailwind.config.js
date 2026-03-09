@@ -31,6 +31,10 @@ export default {
           '100%': { boxShadow: '0 0 30px rgba(176, 38, 255, 0.4)' },
         },
       },
+      boxShadow: {
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'card': '0 0 0 1px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.05), 0 12px 24px rgba(0,0,0,0.05)',
+      },
     },
   },
   plugins: [],
