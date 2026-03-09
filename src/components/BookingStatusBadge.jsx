@@ -1,21 +1,26 @@
 import React from 'react'
 
 const statusConfig = {
-  PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-  APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  COLLECT_PENDING: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  COLLECTED: 'bg-teal-50 text-teal-700 border-teal-200',
-  RETURN_PENDING: 'bg-sky-50 text-sky-700 border-sky-200',
-  RETURN_REJECTED: 'bg-orange-50 text-orange-700 border-orange-200',
-  REJECTED: 'bg-red-50 text-red-700 border-red-200',
-  RETURNED: 'bg-gray-50 text-gray-600 border-gray-200',
-  CANCELLED: 'bg-gray-50 text-gray-500 border-gray-200',
+  PENDING: { label: 'Pending', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.2)', color: '#fbbf24' },
+  APPROVED: { label: 'Approved', bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', color: '#34d399' },
+  COLLECT_PENDING: { label: 'Collect Pending', bg: 'rgba(129,140,248,0.1)', border: 'rgba(129,140,248,0.2)', color: '#818cf8' },
+  COLLECTED: { label: 'Collected', bg: 'rgba(45,212,191,0.1)', border: 'rgba(45,212,191,0.2)', color: '#2dd4bf' },
+  RETURN_PENDING: { label: 'Return Pending', bg: 'rgba(56,189,248,0.1)', border: 'rgba(56,189,248,0.2)', color: '#38bdf8' },
+  RETURN_REJECTED: { label: 'Return Rejected', bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.2)', color: '#fb923c' },
+  REJECTED: { label: 'Rejected', bg: 'rgba(251,113,133,0.1)', border: 'rgba(251,113,133,0.2)', color: '#fb7185' },
+  RETURNED: { label: 'Returned', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)', color: '#94a3b8' },
+  CANCELLED: { label: 'Cancelled', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.2)', color: '#6b7280' },
 }
 
 function BookingStatusBadge({ status }) {
+  const config = statusConfig[status] || statusConfig.CANCELLED
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusConfig[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-      {status}
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+      style={{ background: config.bg, border: `1px solid ${config.border}`, color: config.color }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: config.color }} />
+      {config.label}
     </span>
   )
 }

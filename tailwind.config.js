@@ -3,19 +3,32 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        display: ['Syne', 'system-ui', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        background: '#060608',
+        surface: '#0e0e12',
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#eef8ff',
+          100: '#d9efff',
+          500: '#00e5ff',
+          700: '#00b8cc',
+          900: '#005c66',
+        },
+        accent: {
+          500: '#b026ff',
+          700: '#8b1ecc',
+        },
+      },
+      animation: {
+        'glow-pulse': 'glow-pulse 3s infinite alternate',
+      },
+      keyframes: {
+        'glow-pulse': {
+          '0%': { boxShadow: '0 0 10px rgba(0, 229, 255, 0.2)' },
+          '100%': { boxShadow: '0 0 30px rgba(176, 38, 255, 0.4)' },
         },
       },
       boxShadow: {
